@@ -760,38 +760,101 @@
   }
 
 
+  function playerIndex(player) {
+    if (player.classList.contains("p1")) return 1;
+    if (player.classList.contains("p2")) return 2;
+    return 0;
+  }
+
+  function resolveControl(el) {
+    if (!el || !el.closest) return null;
+    if (el.closest("#reset")) return { kind: "reset" };
+    var player = el.closest(".player");
+    if (!player) return null;
+    var i = playerIndex(player);
+    if (!i) return null;
+    var add = el.closest(".add");
+    if (add) {
+      return { kind: "add", i: i, delta: parseInt(add.getAttribute("data-add"), 10) };
+    }
+    if (el.closest(".minus")) return { kind: "minus", i: i };
+    if (el.closest(".undo")) return { kind: "undo", i: i };
+    if (el.closest(".name")) return { kind: "name", i: i };
+    if (el.closest(".mid")) return { kind: "mid", i: i };
+    return null;
+  }
+
+  function runControl(c) {
+    if (!c) return;
+    if (c.kind === "reset") openReset();
+    else if (c.kind === "add") change(c.i, c.delta);
+    else if (c.kind === "minus") change(c.i, -1);
+    else if (c.kind === "undo") undo(c.i);
+    else if (c.kind === "name") openName(c.i);
+    else if (c.kind === "mid") change(c.i, 1);
+  }
+
+  var RIPPLE_HOSTS = ".add, .minus, .undo, #reset";
+
+  function press(el, fn) {
+    el.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "touch") return; // touch is handled by touchstart
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      e.stopPropagation();
+      e.preventDefault();
+      var host = el.closest && el.closest(RIPPLE_HOSTS);
+      if (host) ripple(host, e.clientX, e.clientY);
+      fn(e);
+    });
+    el.addEventListener("click", function (e) {
+      if (e.detail !== 0) return; // real pointer click; keyboard/AT only
+      e.stopPropagation();
+      fn(e);
+    });
+  }
+
+  function onTouchStart(e) {
+    if (!dialog.hidden || !nameDialog.hidden) return;
+    var touches = e.changedTouches || [];
+    var handled = false;
+    for (var k = 0; k < touches.length; k++) {
+      var t = touches[k];
+      var el = document.elementFromPoint(t.clientX, t.clientY);
+      var c = resolveControl(el);
+      if (!c) continue;
+      var host = el.closest && el.closest(RIPPLE_HOSTS);
+      if (host) ripple(host, t.clientX, t.clientY);
+      runControl(c);
+      handled = true;
+    }
+    if (handled) e.preventDefault();
+  }
+
   [1, 2].forEach(function (i) {
-    els[i].mid.addEventListener("click", function () {
+    press(els[i].mid, function () {
       change(i, 1);
     });
 
-    els[i].root
-      .querySelector(".minus")
-      .addEventListener("click", function (e) {
-        e.stopPropagation();
-        change(i, -1);
-      });
+    press(els[i].root.querySelector(".minus"), function () {
+      change(i, -1);
+    });
 
     els[i].root.querySelectorAll(".add").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
+      press(btn, function () {
         change(i, parseInt(btn.getAttribute("data-add"), 10));
       });
     });
 
-    els[i].undo.addEventListener("click", function (e) {
-      e.stopPropagation();
+    press(els[i].undo, function () {
       undo(i);
     });
 
-    els[i].name.addEventListener("click", function (e) {
-      e.stopPropagation();
+    press(els[i].name, function () {
       openName(i);
     });
   });
 
-  document.getElementById("reset").addEventListener("click", function (e) {
-    e.stopPropagation();
+  press(document.getElementById("reset"), function () {
     openReset();
   });
 
@@ -829,13 +892,7 @@
   updateUndo(2);
   updateLeader();
 
-  Array.prototype.slice
-    .call(document.querySelectorAll(".add, .minus, .undo, #reset"))
-    .forEach(function (b) {
-      b.addEventListener("pointerdown", function (e) {
-        ripple(b, e.clientX, e.clientY);
-      });
-    });
+  document.addEventListener("touchstart", onTouchStart, { passive: false });
 
   FX.init();
   FX.setGame(state[1], state[2]);
