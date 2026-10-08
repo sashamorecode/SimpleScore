@@ -28,15 +28,6 @@
     function pick(a) { return a[(Math.random() * a.length) | 0]; }
     function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
-    function hexA(hex, a) {
-      if (hex.charAt(0) !== "#") return hex;
-      var h = hex.slice(1);
-      if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
-      var n = parseInt(h, 16);
-      return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," +
-        (n & 255) + "," + a + ")";
-    }
-
     function init() {
       canvas = document.getElementById("fx");
       if (!canvas || !canvas.getContext) return;
@@ -245,44 +236,6 @@
       var x1 = rect1.x, x2 = rect2.x;
       var mx = x1 + (x2 - x1) * beamMix;
       var my = baseY + beamSag + 8;
-
-      var grad = ctx.createLinearGradient(x1, baseY, x2, baseY);
-      grad.addColorStop(0, "rgba(59,130,246,.9)");
-      grad.addColorStop(1, "rgba(244,63,94,.9)");
-
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      ctx.lineCap = "round";
-      ctx.strokeStyle = grad;
-      ctx.globalAlpha = 0.16 + (tie ? 0.28 : 0) + Math.min(0.24, total / 400);
-      ctx.lineWidth = tie ? 16 : 10;
-      ctx.beginPath();
-      ctx.moveTo(x1, baseY);
-      ctx.quadraticCurveTo(mx, my, x2, baseY);
-      ctx.stroke();
-
-      ctx.globalAlpha = 0.9;
-      ctx.lineWidth = 3;
-      ctx.setLineDash([10, 14]);
-      ctx.lineDashOffset = -((now / 6) % 24);
-      ctx.beginPath();
-      ctx.moveTo(x1, baseY);
-      ctx.quadraticCurveTo(mx, my, x2, baseY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      var orbC = diff === 0 ? "#ffffff" : (diff > 0 ? P1 : P2);
-      var orbR = 8 + Math.min(22, total / 12) + Math.sin(now / 180) * 2;
-      var g2 = ctx.createRadialGradient(mx, my, 0, mx, my, orbR);
-      g2.addColorStop(0, orbC);
-      g2.addColorStop(0.4, hexA(orbC, 0.5));
-      g2.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.globalAlpha = 0.95;
-      ctx.fillStyle = g2;
-      ctx.beginPath();
-      ctx.arc(mx, my, orbR, 0, 6.283);
-      ctx.fill();
-      ctx.restore();
 
       if (tie) {
         tieTimer -= 1;
