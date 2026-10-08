@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0d12" />
+  <title>SimpleScore</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="board">
+    <section class="player p1" aria-label="Player 1">
+      <div class="name" data-name="1">Player 1</div>
+      <div class="score" data-score="1">0</div>
+      <div class="tap-hint">tap to score</div>
+      <button class="minus" data-minus="1" aria-label="Subtract one">−</button>
+    </section>
+
+    <section class="player p2" aria-label="Player 2">
+      <div class="name" data-name="2">Player 2</div>
+      <div class="score" data-score="2">0</div>
+      <div class="tap-hint">tap to score</div>
+      <button class="minus" data-minus="2" aria-label="Subtract one">−</button>
+    </section>
+
+    <button id="reset" aria-label="Reset scores">↺</button>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "simplescore",
+  "version": "1.0.0",
+  "description": "Ultra-simple two-player scorekeeper wrapped with Capacitor for Android",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "sashamorecode",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}

@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build outputs (root-level; native Android outputs are handled by android/.gitignore)
+/dist/
+*.apk
+
+# OS cruft
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+
+# Editor cruft
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+.project
+.classpath
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env
+.env
+.env.*

@@ -1,0 +1,8 @@
+{
+  "appId": "com.sashamorecode.simplescore",
+  "appName": "SimpleScore",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0a0d12"
+  }
+}
