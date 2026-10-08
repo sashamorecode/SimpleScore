@@ -26,11 +26,13 @@
   var els = {
     1: {
       root: document.querySelector(".p1"),
+      mid: document.querySelector(".p1 .mid"),
       score: document.querySelector('[data-score="1"]'),
       name: document.querySelector('[data-name="1"]'),
     },
     2: {
       root: document.querySelector(".p2"),
+      mid: document.querySelector(".p2 .mid"),
       score: document.querySelector('[data-score="2"]'),
       name: document.querySelector('[data-name="2"]'),
     },
@@ -69,10 +71,10 @@
     }, 130);
   }
 
-  function floatPlus(i) {
+  function floatPlus(i, amount) {
     var span = document.createElement("span");
     span.className = "plus";
-    span.textContent = "+1";
+    span.textContent = "+" + amount;
     span.style.color = i === 1 ? "var(--p1)" : "var(--p2)";
     els[i].root.appendChild(span);
     setTimeout(function () {
@@ -86,7 +88,7 @@
     persist();
     if (delta > 0) {
       pop(i);
-      floatPlus(i);
+      floatPlus(i, delta);
       buzz(12);
     } else {
       buzz(8);
@@ -104,7 +106,7 @@
   }
 
   [1, 2].forEach(function (i) {
-    els[i].root.addEventListener("click", function () {
+    els[i].mid.addEventListener("click", function () {
       change(i, 1);
     });
 
@@ -113,6 +115,15 @@
       .addEventListener("click", function (e) {
         e.stopPropagation();
         change(i, -1);
+      });
+
+    els[i].root
+      .querySelectorAll(".add")
+      .forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          change(i, parseInt(btn.getAttribute("data-add"), 10));
+        });
       });
 
     els[i].name.addEventListener("click", function (e) {

@@ -10,17 +10,43 @@
 <body>
   <main id="board">
     <section class="player p1" aria-label="Player 1">
-      <div class="name" data-name="1">Player 1</div>
-      <div class="score" data-score="1">0</div>
-      <div class="tap-hint">tap to score</div>
-      <button class="minus" data-minus="1" aria-label="Subtract one">−</button>
+      <button class="minus" data-minus="1" aria-label="Subtract one from Player 1">− 1</button>
+
+      <div class="mid">
+        <div class="name" data-name="1">Player 1</div>
+        <div class="score" data-score="1">0</div>
+        <div class="hint">tap score for +1</div>
+      </div>
+
+      <div class="adds">
+        <button class="add" data-add="2">+2</button>
+        <button class="add" data-add="3">+3</button>
+        <button class="add" data-add="4">+4</button>
+        <button class="add" data-add="5">+5</button>
+        <button class="add" data-add="6">+6</button>
+        <button class="add" data-add="7">+7</button>
+        <button class="add" data-add="8">+8</button>
+      </div>
     </section>
 
     <section class="player p2" aria-label="Player 2">
-      <div class="name" data-name="2">Player 2</div>
-      <div class="score" data-score="2">0</div>
-      <div class="tap-hint">tap to score</div>
-      <button class="minus" data-minus="2" aria-label="Subtract one">−</button>
+      <button class="minus" data-minus="2" aria-label="Subtract one from Player 2">− 1</button>
+
+      <div class="mid">
+        <div class="name" data-name="2">Player 2</div>
+        <div class="score" data-score="2">0</div>
+        <div class="hint">tap score for +1</div>
+      </div>
+
+      <div class="adds">
+        <button class="add" data-add="2">+2</button>
+        <button class="add" data-add="3">+3</button>
+        <button class="add" data-add="4">+4</button>
+        <button class="add" data-add="5">+5</button>
+        <button class="add" data-add="6">+6</button>
+        <button class="add" data-add="7">+7</button>
+        <button class="add" data-add="8">+8</button>
+      </div>
     </section>
 
     <button id="reset" aria-label="Reset scores">↺</button>
