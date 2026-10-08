@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#0a0d12" />
   <title>SimpleScore</title>
   <link rel="stylesheet" href="styles.css" />
@@ -15,7 +15,6 @@
       <div class="mid">
         <div class="name" data-name="1">Player 1</div>
         <div class="score" data-score="1">0</div>
-        <div class="hint">tap score for +1</div>
       </div>
 
       <div class="adds">
@@ -25,8 +24,9 @@
         <button class="add" data-add="5">+5</button>
         <button class="add" data-add="6">+6</button>
         <button class="add" data-add="7">+7</button>
-        <button class="add" data-add="8">+8</button>
       </div>
+
+      <button class="undo" data-undo="1" disabled>Undo</button>
     </section>
 
     <section class="player p2" aria-label="Player 2">
@@ -35,7 +35,6 @@
       <div class="mid">
         <div class="name" data-name="2">Player 2</div>
         <div class="score" data-score="2">0</div>
-        <div class="hint">tap score for +1</div>
       </div>
 
       <div class="adds">
@@ -45,12 +44,37 @@
         <button class="add" data-add="5">+5</button>
         <button class="add" data-add="6">+6</button>
         <button class="add" data-add="7">+7</button>
-        <button class="add" data-add="8">+8</button>
       </div>
+
+      <button class="undo" data-undo="2" disabled>Undo</button>
     </section>
 
     <button id="reset" aria-label="Reset scores">↺</button>
   </main>
+
+  <div id="dialog" class="dialog" hidden>
+    <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+      <div class="dialog-title" id="dialog-title">Reset both scores?</div>
+      <div class="dialog-text">Clears both players and the undo history.</div>
+      <div class="dialog-actions">
+        <button class="dialog-btn ghost" id="dialog-cancel" type="button">Cancel</button>
+        <button class="dialog-btn danger" id="dialog-confirm" type="button">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="name-dialog" class="dialog" hidden>
+    <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="name-title">
+      <div class="dialog-title" id="name-title">Player name</div>
+      <input id="name-input" class="dialog-input" type="text" maxlength="24"
+        autocomplete="off" autocapitalize="words" spellcheck="false" />
+      <div class="dialog-actions">
+        <button class="dialog-btn ghost" id="name-cancel" type="button">Cancel</button>
+        <button class="dialog-btn primary" id="name-save" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

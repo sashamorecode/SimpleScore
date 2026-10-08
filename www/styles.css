@@ -40,8 +40,8 @@ main {
   position: fixed;
   inset: 0;
   display: flex;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
-    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0
+    env(safe-area-inset-left);
 }
 
 .player {
@@ -162,7 +162,7 @@ main {
 }
 
 .add {
-  min-height: clamp(46px, 8vh, 66px);
+  min-height: clamp(54px, 9.5vh, 78px);
   border-radius: clamp(12px, 3vw, 16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.05);
@@ -188,6 +188,46 @@ main {
 .add:active {
   transform: scale(0.94);
   background: rgba(255, 255, 255, 0.16);
+}
+
+.undo {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: clamp(16px, 4.6vw, 22px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: clamp(16px, 3.2vh, 24px) 0;
+  padding-bottom: calc(
+    clamp(16px, 3.2vh, 24px) + env(safe-area-inset-bottom)
+  );
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.p1 .undo {
+  color: var(--p1);
+  text-shadow: 0 0 18px rgba(59, 130, 246, 0.5);
+}
+
+.p2 .undo {
+  color: var(--p2);
+  text-shadow: 0 0 18px rgba(244, 63, 94, 0.5);
+}
+
+.undo:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.undo:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 @media (orientation: landscape) {
@@ -232,6 +272,136 @@ main {
   pointer-events: none;
   opacity: 0;
   animation: float 0.7s ease-out forwards;
+}
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 6, 10, 0.62);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: fade 0.18s ease;
+}
+
+.dialog[hidden] {
+  display: none;
+}
+
+#name-dialog {
+  align-items: flex-start;
+  padding-top: calc(
+    env(safe-area-inset-top) + clamp(24px, 13vh, 130px)
+  );
+}
+
+.dialog-card {
+  width: min(92vw, 360px);
+  padding: 24px 22px 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, #151a22, #0e1218);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  text-align: center;
+  animation: rise 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.dialog-title {
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.dialog-text {
+  margin-top: 8px;
+  font-size: clamp(12px, 3.4vw, 14px);
+  line-height: 1.45;
+  color: rgba(231, 236, 243, 0.55);
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.dialog-btn {
+  flex: 1;
+  min-height: 50px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+  font-size: clamp(14px, 4vw, 16px);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+
+.dialog-btn:active {
+  transform: scale(0.96);
+}
+
+.dialog-btn.ghost {
+  color: rgba(231, 236, 243, 0.7);
+}
+
+.dialog-btn.primary {
+  border-color: rgba(59, 130, 246, 0.42);
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+  text-shadow: 0 0 16px rgba(59, 130, 246, 0.45);
+}
+
+.dialog-input {
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  font-size: clamp(15px, 4.2vw, 18px);
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dialog-input:focus {
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.dialog-btn.danger {
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.16);
+  color: #fb7185;
+  text-shadow: 0 0 16px rgba(244, 63, 94, 0.45);
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @keyframes float {
