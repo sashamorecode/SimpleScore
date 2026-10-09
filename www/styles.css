@@ -788,7 +788,7 @@ main {
 }
 
 body.overdrive .player {
-  animation: overdriveHue 6s linear infinite;
+  filter: saturate(1.3);
 }
 
 body.overdrive::after {
@@ -799,7 +799,8 @@ body.overdrive::after {
   pointer-events: none;
   box-shadow: inset 0 0 130px rgba(168, 85, 247, 0.45),
     inset 0 0 60px rgba(244, 63, 94, 0.35);
-  animation: overdrivePulse 2.4s ease-in-out infinite;
+  animation: overdrivePulse 2.4s ease-in-out infinite,
+    overdriveHue 6s linear infinite;
 }
 
 @keyframes overdriveHue {
@@ -837,7 +838,6 @@ body.overdrive #board {
   #board.shake-lg,
   .player.leading .aura,
   .player.leading .crown,
-  body.overdrive .player,
   body.overdrive::after {
     animation-duration: 0.001s !important;
     animation-iteration-count: 1 !important;

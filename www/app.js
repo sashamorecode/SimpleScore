@@ -14,10 +14,11 @@
     var EMOJI = ["🎉", "🔥", "⚡", "💥", "⭐", "✨", "🏆", "🚀", "💯", "🎯",
       "🍕", "👑", "💫", "🌈", "🍾", "🥳", "🤯", "👽", "🦄", "🐉", "💰",
       "🎸", "🕹️", "🧨", "🍩", "🦖", "🌮", "🧃", "🛸", "🐙"];
+    var EMOJI_SIZES = [22, 27, 32, 37, 42];
 
     var canvas, ctx, W = 0, H = 0, dpr = 1;
     var parts = [], rings = [], bolts = [], embers = [];
-    var raf = 0, last = 0, started = false;
+    var raf = 0, last = 0, started = false, paused = false;
     var flashEl, bannerEl, boardEl;
     var rect1 = null, rect2 = null;
     var game = { p1: 0, p2: 0 };
@@ -30,7 +31,8 @@
     function dragF(base, f) { return Math.abs(f - 1) < 0.01 ? base : Math.pow(base, f); }
 
     var emojiCache = {};
-    var EMOJI_CACHE_MAX = 128;
+    var emojiCacheKeys = [];
+    var EMOJI_CACHE_MAX = 256;
     function emojiSprite(p) {
       var s = emojiCache[p.cacheKey];
       if (s) return s;
@@ -46,9 +48,11 @@
       cx.textBaseline = "middle";
       cx.fillText(p.text, px / 2, px / 2);
       s = { c: c, w: px };
-      var count = 0;
-      for (var k in emojiCache) { if (++count >= EMOJI_CACHE_MAX) return s; }
+      if (emojiCacheKeys.length >= EMOJI_CACHE_MAX) {
+        delete emojiCache[emojiCacheKeys.shift()];
+      }
       emojiCache[p.cacheKey] = s;
+      emojiCacheKeys.push(p.cacheKey);
       return s;
     }
 
@@ -64,9 +68,9 @@
       window.addEventListener("orientationchange", function () {
         setTimeout(resize, 250);
       });
+      document.addEventListener("visibilitychange", onVisibility);
       started = true;
-      last = performance.now();
-      raf = requestAnimationFrame(tick);
+      wake();
     }
 
     function resize() {
@@ -80,6 +84,7 @@
       canvas.style.height = H + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       emojiCache = {};
+      emojiCacheKeys = [];
       measure();
     }
 
@@ -97,7 +102,7 @@
     }
 
     function tick(now) {
-      raf = requestAnimationFrame(tick);
+      if (paused || document.hidden) { raf = 0; return; }
       var dt = now - last;
       last = now;
       if (dt > 48) dt = 48;
@@ -105,6 +110,28 @@
       var f = dt / 16.6667;
       update(f, dt, now);
       draw(now);
+      raf = shouldRun() ? requestAnimationFrame(tick) : 0;
+    }
+
+    function shouldRun() {
+      if (paused || document.hidden) return false;
+      return parts.length > 0 || rings.length > 0 || bolts.length > 0 ||
+        embers.length > 0 || (game.p1 + game.p2) > 0;
+    }
+
+    function wake() {
+      if (raf || paused || document.hidden) return;
+      last = performance.now();
+      raf = requestAnimationFrame(tick);
+    }
+
+    function onVisibility() {
+      if (!document.hidden) wake();
+    }
+
+    function setPaused(v) {
+      paused = !!v;
+      if (!paused) wake();
     }
 
     function update(f, dt, now) {
@@ -127,7 +154,7 @@
     }
 
     /* ---- emitters ---- */
-    function addPart(p) { if (parts.length < 900) parts.push(p); }
+    function addPart(p) { if (parts.length < 900) { parts.push(p); wake(); } }
 
     function spark(x, y, color, o) {
       o = o || {};
@@ -160,8 +187,8 @@
       o = o || {};
       var sp = o.speed != null ? o.speed : rnd(3, 7);
       var ang = rnd(-Math.PI, 0);
-      var size = rnd(20, 42);
-      var rs = Math.round(size);
+      var rs = EMOJI_SIZES[(Math.random() * EMOJI_SIZES.length) | 0];
+      var size = rs;
       var text = pick(EMOJI);
       addPart({
         t: "emoji", x: x, y: y, text: text,
@@ -179,6 +206,7 @@
         x: x, y: y, r0: r0, r1: o.r1 != null ? o.r1 : 90,
         r: r0, color: color, life: o.life || 34, age: 0, w: o.w || 4
       });
+      wake();
     }
 
     function makeBolt(x1, y1, x2, y2, color, jag) {
@@ -192,6 +220,7 @@
         });
       }
       bolts.push({ pts: pts, color: color, life: rnd(8, 16), age: 0, w: rnd(1.5, 3) });
+      wake();
     }
 
     /* ---- updates ---- */
@@ -237,7 +266,7 @@
     function updateEmbers(f) {
       emberTimer -= f;
       var target = Math.min(70, Math.floor((game.p1 + game.p2) / 5));
-      if (emberTimer <= 0 && embers.length < target + 6) {
+      if (target > 0 && emberTimer <= 0 && embers.length < target + 6) {
         emberTimer = rnd(3, 11);
         embers.push({
           x: rnd(0, W), y: H + 10,
@@ -421,6 +450,7 @@
         beamTarget = 0.5;
       }
       if (!rect1) measure();
+      wake();
     }
 
     function hit(player, amount) {
@@ -544,7 +574,8 @@
       reset: reset,
       shake: shake,
       flash: flash,
-      banner: bannerText
+      banner: bannerText,
+      setPaused: setPaused
     };
   })();
 
@@ -737,10 +768,12 @@
   function openReset() {
     dialog.hidden = false;
     pinDialogs();
+    FX.setPaused(true);
   }
 
   function closeReset() {
     dialog.hidden = true;
+    FX.setPaused(false);
   }
 
   function performReset() {
@@ -769,6 +802,7 @@
     nameInput.value = names[i];
     nameDialog.hidden = false;
     pinDialogs();
+    FX.setPaused(true);
     setTimeout(function () {
       nameInput.focus({ preventScroll: true });
       nameInput.select();
@@ -779,6 +813,7 @@
   function closeName() {
     nameDialog.hidden = true;
     editingName = null;
+    FX.setPaused(false);
   }
 
   function saveName() {
