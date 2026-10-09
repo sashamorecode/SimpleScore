@@ -13,7 +13,8 @@
   "type": "commonjs",
   "dependencies": {
     "@capacitor/android": "^8.5.3",
-    "@capacitor/core": "^8.5.3"
+    "@capacitor/core": "^8.5.3",
+    "@capgo/capacitor-updater": "^8.52.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.3"

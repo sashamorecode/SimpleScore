@@ -32,6 +32,37 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set Android release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+          const tag = process.env.RELEASE_TAG;
+          const match = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(tag);
+          if (!match) throw new Error(`Invalid release tag "${tag}": expected vMAJOR.MINOR.PATCH`);
+          const [major, minor, patch] = match.slice(1).map(Number);
+          if (minor >= 100 || patch >= 100) throw new Error('Minor and patch must each be < 100');
+          const code = major * 10000 + minor * 100 + patch;
+          if (!Number.isSafeInteger(code) || code <= 0 || code > 2100000000) {
+            throw new Error(`Invalid Android versionCode: ${code}`);
+          }
+          const versionName = tag.slice(1);
+          const gradlePath = 'android/app/build.gradle';
+          const gradle = fs.readFileSync(gradlePath, 'utf8');
+          const versionCodeRe = /^([ \t]*)versionCode[ \t]+[^\n]*$/gm;
+          const versionNameRe = /^([ \t]*)versionName[ \t]+[^\n]*$/gm;
+          if ((gradle.match(versionCodeRe) || []).length !== 1 || (gradle.match(versionNameRe) || []).length !== 1) {
+            throw new Error(`Expected exactly one versionCode and versionName in ${gradlePath}`);
+          }
+          const next = gradle
+            .replace(versionCodeRe, (_line, indent) => `${indent}versionCode ${code}`)
+            .replace(versionNameRe, (_line, indent) => `${indent}versionName "${versionName}"`);
+          fs.writeFileSync(gradlePath, next);
+          console.log(`Set versionName "${versionName}" (versionCode ${code})`);
+          EOF
+
       - name: Sync Capacitor Android
         run: npx cap sync android
 
@@ -46,13 +77,33 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
+      - name: Build OTA bundle
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          npx --yes @capgo/cli@latest bundle zip com.sashamorecode.simplescore --path www --name dist.zip --json
+          node <<'EOF'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const latest = {
+            version: process.env.RELEASE_TAG.slice(1),
+            url: 'https://github.com/sashamorecode/SimpleScore/releases/latest/download/dist.zip',
+            checksum: crypto.createHash('sha256').update(fs.readFileSync('dist.zip')).digest('hex'),
+          };
+          fs.writeFileSync('latest.json', JSON.stringify(latest));
+          EOF
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: ${{ github.ref_name }}
           name: SimpleScore ${{ github.ref_name }}
-          files: android/app/build/outputs/apk/debug/app-debug.apk
+          files: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            dist.zip
+            latest.json
           generate_release_notes: true
           draft: false
           prerelease: false
