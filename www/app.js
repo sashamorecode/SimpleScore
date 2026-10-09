@@ -27,6 +27,30 @@
     function rnd(a, b) { return a + Math.random() * (b - a); }
     function pick(a) { return a[(Math.random() * a.length) | 0]; }
     function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+    function dragF(base, f) { return Math.abs(f - 1) < 0.01 ? base : Math.pow(base, f); }
+
+    var emojiCache = {};
+    var EMOJI_CACHE_MAX = 128;
+    function emojiSprite(p) {
+      var s = emojiCache[p.cacheKey];
+      if (s) return s;
+      var rs = p.rs;
+      var box = Math.ceil(rs * 1.6);
+      var px = Math.max(1, Math.round(box * dpr));
+      var c = document.createElement("canvas");
+      c.width = px;
+      c.height = px;
+      var cx = c.getContext("2d");
+      cx.font = rs + "px serif";
+      cx.textAlign = "center";
+      cx.textBaseline = "middle";
+      cx.fillText(p.text, px / 2, px / 2);
+      s = { c: c, w: px };
+      var count = 0;
+      for (var k in emojiCache) { if (++count >= EMOJI_CACHE_MAX) return s; }
+      emojiCache[p.cacheKey] = s;
+      return s;
+    }
 
     function init() {
       canvas = document.getElementById("fx");
@@ -55,6 +79,7 @@
       canvas.style.width = W + "px";
       canvas.style.height = H + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      emojiCache = {};
       measure();
     }
 
@@ -85,7 +110,7 @@
     function update(f, dt, now) {
       beamMix += (beamTarget - beamMix) * clamp(0.1 * f, 0, 1);
       beamSag += (beamSagTarget - beamSag) * clamp(0.08 * f, 0, 1);
-      updateParts(f);
+      if (parts.length) updateParts(f, dragF(0.97, f), dragF(0.985, f), dragF(0.99, f));
       updateRings(f);
       updateBolts(f);
       updateEmbers(f);
@@ -95,10 +120,10 @@
       if (!ctx) return;
       ctx.clearRect(0, 0, W, H);
       drawBeam(now);
-      drawEmbers();
-      drawRings();
+      if (embers.length) drawEmbers();
+      if (rings.length) drawRings();
       drawParts();
-      drawBolts();
+      if (bolts.length) drawBolts();
     }
 
     /* ---- emitters ---- */
@@ -135,11 +160,15 @@
       o = o || {};
       var sp = o.speed != null ? o.speed : rnd(3, 7);
       var ang = rnd(-Math.PI, 0);
+      var size = rnd(20, 42);
+      var rs = Math.round(size);
+      var text = pick(EMOJI);
       addPart({
-        t: "emoji", x: x, y: y, text: pick(EMOJI),
+        t: "emoji", x: x, y: y, text: text,
         vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - rnd(1, 4),
         life: rnd(45, 80), age: 0,
-        size: rnd(20, 42), rot: rnd(-0.6, 0.6), vr: rnd(-0.12, 0.12)
+        size: size, rs: rs, rot: rnd(-0.6, 0.6), vr: rnd(-0.12, 0.12),
+        font: size + "px serif", cacheKey: text + "|" + rs
       });
     }
 
@@ -166,21 +195,22 @@
     }
 
     /* ---- updates ---- */
-    function updateParts(f) {
+    function updateParts(f, d97, d985, d99) {
       for (var i = parts.length - 1; i >= 0; i--) {
         var p = parts[i];
         p.age += f;
         if (p.age >= p.life) { parts.splice(i, 1); continue; }
         if (p.t === "spark") {
           p.px = p.x; p.py = p.y;
-          p.vx *= Math.pow(p.drag, f);
-          p.vy = p.vy * Math.pow(p.drag, f) + p.grav * f;
+          var df = p.drag === 0.985 ? d985 : d97;
+          p.vx *= df;
+          p.vy = p.vy * df + p.grav * f;
           p.x += p.vx * f; p.y += p.vy * f;
         } else if (p.t === "conf") {
-          p.vy += p.grav * f; p.vx *= Math.pow(p.drag, f);
+          p.vy += p.grav * f; p.vx *= d99;
           p.x += p.vx * f; p.y += p.vy * f; p.rot += p.vr * f;
         } else if (p.t === "emoji") {
-          p.vy += 0.18 * f; p.vx *= Math.pow(0.99, f);
+          p.vy += 0.18 * f; p.vx *= d99;
           p.x += p.vx * f; p.y += p.vy * f; p.rot += p.vr * f;
         }
       }
@@ -192,7 +222,8 @@
         r.age += f;
         if (r.age >= r.life) { rings.splice(i, 1); continue; }
         var t = r.age / r.life;
-        r.r = r.r0 + (r.r1 - r.r0) * (1 - Math.pow(1 - t, 3));
+        var u = 1 - t;
+        r.r = r.r0 + (r.r1 - r.r0) * (1 - u * u * u);
       }
     }
 
@@ -288,45 +319,65 @@
     }
 
     function drawParts() {
-      var i, p;
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      ctx.lineCap = "round";
+      var i, p, a2, cos, sin, spr, lastCol;
+      var hasSparks = false, hasChars = false;
       for (i = 0; i < parts.length; i++) {
-        p = parts[i];
-        if (p.t !== "spark") continue;
-        ctx.globalAlpha = clamp(1 - p.age / p.life, 0, 1);
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = p.size;
-        ctx.beginPath();
-        ctx.moveTo(p.px, p.py);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 0.7, 0, 6.283);
-        ctx.fill();
+        var tp = parts[i].t;
+        if (tp === "spark") hasSparks = true;
+        else if (tp === "conf" || tp === "emoji") hasChars = true;
+        if (hasSparks && hasChars) break;
       }
-      ctx.restore();
+      if (!hasSparks && !hasChars) return;
+      if (hasSparks) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        lastCol = null;
+        for (i = 0; i < parts.length; i++) {
+          p = parts[i];
+          if (p.t !== "spark") continue;
+          ctx.globalAlpha = clamp(1 - p.age / p.life, 0, 1);
+          ctx.lineWidth = p.size;
+          if (p.color !== lastCol) {
+            lastCol = p.color;
+            ctx.strokeStyle = p.color;
+            ctx.fillStyle = p.color;
+          }
+          ctx.beginPath();
+          ctx.moveTo(p.px, p.py);
+          ctx.lineTo(p.x, p.y);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * 0.7, 0, 6.283);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      if (!hasChars) return;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       for (i = 0; i < parts.length; i++) {
         p = parts[i];
         if (p.t !== "conf" && p.t !== "emoji") continue;
-        var a2 = clamp(1 - p.age / p.life, 0, 1);
-        ctx.save();
+        a2 = clamp(1 - p.age / p.life, 0, 1);
         ctx.globalAlpha = a2;
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
+        cos = Math.cos(p.rot); sin = Math.sin(p.rot);
+        ctx.setTransform(dpr * cos, dpr * sin, -dpr * sin, dpr * cos, dpr * p.x, dpr * p.y);
         if (p.t === "conf") {
           ctx.fillStyle = p.color;
           ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
         } else {
-          ctx.font = p.size + "px serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(p.text, 0, 0);
+          spr = emojiSprite(p);
+          if (spr) {
+            var half = (spr.w / dpr) / 2;
+            ctx.drawImage(spr.c, -half, -half, spr.w / dpr, spr.w / dpr);
+          } else {
+            ctx.font = p.font;
+            ctx.fillText(p.text, 0, 0);
+          }
         }
-        ctx.restore();
       }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.globalAlpha = 1;
     }
 
