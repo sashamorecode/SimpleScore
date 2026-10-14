@@ -627,7 +627,6 @@
       name: document.querySelector('[data-name="1"]'),
       undo: document.querySelector('[data-undo="1"]'),
       status: document.querySelector('[data-status="1"]'),
-      goal: document.querySelector('[data-goal="1"]'),
     },
     2: {
       root: document.querySelector(".p2"),
@@ -636,9 +635,10 @@
       name: document.querySelector('[data-name="2"]'),
       undo: document.querySelector('[data-undo="2"]'),
       status: document.querySelector('[data-status="2"]'),
-      goal: document.querySelector('[data-goal="2"]'),
     },
   };
+
+  var goalLabel = document.getElementById("goal-label");
 
   function persist() {
     localStorage.setItem(
@@ -702,6 +702,8 @@
   }
 
   function updateMatch() {
+    var goalText = "Goal: " + state.goal;
+    if (goalLabel.textContent !== goalText) goalLabel.textContent = goalText;
     [1, 2].forEach(function (i) {
       var remaining = Math.max(0, state.goal - state["p" + i]);
       var status = state.winner === i ? "Winner · keep playing" :
@@ -710,7 +712,6 @@
       if (els[i].status.textContent !== status) els[i].status.textContent = status;
       els[i].status.classList.toggle("winner", state.winner === i);
       els[i].root.classList.toggle("near-goal", remaining === 1 && state.goal >= 2);
-      els[i].goal.textContent = "Goal " + state.goal + (remaining ? " · " + remaining + " to go" : "");
     });
     updateLeader();
     FX.setGame(state.p1, state.p2, state.goal);

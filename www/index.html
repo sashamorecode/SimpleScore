@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#0a0d12" />
   <title>SimpleScore</title>
-  <link rel="stylesheet" href="styles.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body>
   <main id="board">
@@ -18,7 +18,6 @@
         <div class="name" data-name="1">Player 1</div>
         <div class="score" data-score="1">0</div>
         <div class="score-status" data-status="1" role="status" aria-live="polite"></div>
-        <div class="goal-context" data-goal="1"></div>
       </div>
 
       <div class="adds">
@@ -42,7 +41,6 @@
         <div class="name" data-name="2">Player 2</div>
         <div class="score" data-score="2">0</div>
         <div class="score-status" data-status="2" role="status" aria-live="polite"></div>
-        <div class="goal-context" data-goal="2"></div>
       </div>
 
       <div class="adds">
@@ -57,6 +55,7 @@
       <button class="undo" data-undo="2" disabled>Undo</button>
     </section>
 
+    <div id="goal-label" aria-live="polite"></div>
     <button id="reset" aria-label="Reset scores">↺</button>
     <button id="options" aria-label="Game options" aria-haspopup="dialog" aria-controls="options-dialog">
       <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
@@ -98,8 +97,7 @@
       <div class="dialog-title" id="options-title">Game options</div>
       <label class="dialog-label" for="goal-input">Score to win</label>
       <input id="goal-input" class="dialog-input" type="text" inputmode="numeric" pattern="[0-9]*"
-        maxlength="12" autocomplete="off" enterkeyhint="done" aria-describedby="goal-help goal-error" />
-      <div class="dialog-text" id="goal-help">First to the goal wins. Keep playing afterward. A new goal applies to current scores.</div>
+        maxlength="12" autocomplete="off" enterkeyhint="done" aria-describedby="goal-error" />
       <div id="goal-error" class="dialog-error" role="alert" hidden></div>
       <div class="dialog-actions">
         <button class="dialog-btn ghost" id="options-cancel" type="button">Cancel</button>
@@ -108,8 +106,8 @@
     </div>
   </div>
 
-  <script src="updater.js?v=9"></script>
-  <script src="match.js?v=9"></script>
-  <script src="app.js?v=9"></script>
+  <script src="updater.js?v=11"></script>
+  <script src="match.js?v=11"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>
