@@ -4,6 +4,7 @@
   var KEY = "simplescore.v1";
   var NAMES_KEY = "simplescore.v1.names";
   var MAX_HISTORY = 200;
+  var Match = window.SimpleScoreMatch;
 
   /* ==========================================================
      FX ENGINE — canvas particles, fireworks, lightning, beams
@@ -21,7 +22,8 @@
     var raf = 0, last = 0, started = false, paused = false;
     var flashEl, bannerEl, boardEl;
     var rect1 = null, rect2 = null;
-    var game = { p1: 0, p2: 0 };
+    var game = { p1: 0, p2: 0, goal: 20 };
+    var celebrationTimers = [];
     var beamMix = 0.5, beamTarget = 0.5, beamSag = 0, beamSagTarget = 10;
     var tieTimer = 0, sparkTimer = 0, emberTimer = 0;
 
@@ -265,7 +267,7 @@
 
     function updateEmbers(f) {
       emberTimer -= f;
-      var target = Math.min(70, Math.floor((game.p1 + game.p2) / 5));
+      var target = Math.min(70, Math.floor((game.p1 + game.p2) / game.goal * 30));
       if (target > 0 && emberTimer <= 0 && embers.length < target + 6) {
         emberTimer = rnd(3, 11);
         embers.push({
@@ -288,7 +290,7 @@
       var total = game.p1 + game.p2;
       if (total <= 0) return;
       var diff = game.p1 - game.p2;
-      var close = Math.abs(diff) <= 3;
+      var close = Math.abs(diff) <= Math.max(1, Math.ceil(game.goal * 0.15));
       var tie = diff === 0;
       beamSagTarget = tie ? 26 + Math.sin(now / 220) * 8 : 10;
 
@@ -439,9 +441,10 @@
     }
 
     /* ---- public effects ---- */
-    function setGame(p1, p2) {
+    function setGame(p1, p2, goal) {
       game.p1 = p1;
       game.p2 = p2;
+      game.goal = goal;
       var total = p1 + p2;
       if (total > 0) {
         var share = p1 / total;
@@ -458,7 +461,8 @@
       var color = player === 1 ? P1 : P2;
       var x = r ? r.x : (player === 1 ? W * 0.25 : W * 0.75);
       var y = r ? r.y : H * 0.5;
-      var big = Math.min(amount, 8);
+      var progress = clamp(game[player === 1 ? "p1" : "p2"] / game.goal, 0, 1);
+      var big = Math.min(8, 1 + progress * 3 + amount / game.goal * 8);
       var i, n = 16 + big * 7;
       for (i = 0; i < n; i++) {
         spark(x, y, Math.random() < 0.5 ? color : "#ffffff",
@@ -466,12 +470,12 @@
       }
       var en = 2 + Math.floor(big / 2) + (Math.random() < 0.3 ? 2 : 0);
       for (i = 0; i < en; i++) emojiP(x, y, { speed: rnd(3, 6 + big) });
-      if (amount >= 4) {
-        for (i = 0; i < amount * 3; i++) confetti(x, y, color, { spread: 1 });
+      if (big >= 4) {
+        for (i = 0; i < big * 3; i++) confetti(x, y, color, { spread: 1 });
       }
       ring(x, y, color, { r1: 70 + big * 14, w: 3, life: 30 });
       ring(x, y, "rgba(255,255,255,.9)", { r1: 40 + big * 10, w: 2, life: 22 });
-      shake(amount >= 6 ? "lg" : amount >= 3 ? "md" : "sm");
+      shake(big >= 6 ? "lg" : big >= 3 ? "md" : "sm");
     }
 
     function subtract(player) {
@@ -488,7 +492,7 @@
       var colors = [color, "#ffffff", "#fbbf24", "#a855f7", "#22d3ee"];
       for (var k = 0; k < 5; k++) {
         (function (k) {
-          setTimeout(function () {
+          celebrationTimers.push(setTimeout(function () {
             var bx = clamp(x + rnd(-W * 0.36, W * 0.36), 20, W - 20);
             var by = clamp(y + rnd(-H * 0.34, H * 0.12), 40, H - 40);
             var c = pick(colors);
@@ -497,7 +501,7 @@
               spark(bx, by, c, { speed: rnd(1, 9), life: rnd(30, 70), grav: 0.06, drag: 0.985 });
             }
             for (var j = 0; j < 8; j++) emojiP(bx, by, { speed: rnd(2, 7) });
-          }, k * 230);
+          }, k * 230));
         })(k);
       }
     }
@@ -510,6 +514,7 @@
     }
 
     function boom(text, player) {
+      clearFeedback();
       var color = player === 1 ? P1 : P2;
       bannerText(text, color);
       flash(player === 1 ? "p1" : "p2");
@@ -520,6 +525,7 @@
     }
 
     function reset() {
+      clearFeedback();
       bannerText("RESET!", "#e7ecf3");
       flash("white");
       shake("lg");
@@ -531,7 +537,7 @@
           { speed: rnd(3, 14), life: rnd(30, 70), grav: 0.05, drag: 0.97 });
       }
       for (i = 0; i < 40; i++) emojiP(W / 2, H * 0.5, { speed: rnd(4, 12) });
-      setTimeout(function () { confettiStorm("#a855f7"); }, 220);
+      celebrationTimers.push(setTimeout(function () { confettiStorm("#a855f7"); }, 220));
     }
 
     function shake(level) {
@@ -564,6 +570,21 @@
       bannerText._t = setTimeout(function () { bannerEl.classList.remove("show"); }, 1550);
     }
 
+    function clearFeedback() {
+      celebrationTimers.forEach(function (timer) { clearTimeout(timer); });
+      celebrationTimers = [];
+      clearTimeout(bannerText._t);
+      if (bannerEl) bannerEl.classList.remove("show");
+      parts = []; rings = []; bolts = [];
+    }
+
+    function notice(text, player) {
+      var color = player === 1 ? P1 : player === 2 ? P2 : "#ffffff";
+      bannerText(text, color);
+      var r = player === 1 ? rect1 : rect2;
+      ring(r ? r.x : W / 2, r ? r.y : H / 2, color, { r1: 110, w: 3, life: 32 });
+    }
+
     return {
       init: init,
       measure: measure,
@@ -575,20 +596,19 @@
       shake: shake,
       flash: flash,
       banner: bannerText,
+      notice: notice,
+      clearFeedback: clearFeedback,
       setPaused: setPaused
     };
   })();
 
-  var state = { 1: 0, 2: 0 };
+  var state = Match.create();
   var names = { 1: "Player 1", 2: "Player 2" };
   var history = { 1: [], 2: [] };
 
   try {
     var saved = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (saved) {
-      state[1] = Math.max(0, saved.p1 | 0);
-      state[2] = Math.max(0, saved.p2 | 0);
-    }
+    if (saved) state = Match.create(saved);
   } catch (e) {}
 
   try {
@@ -606,6 +626,8 @@
       score: document.querySelector('[data-score="1"]'),
       name: document.querySelector('[data-name="1"]'),
       undo: document.querySelector('[data-undo="1"]'),
+      status: document.querySelector('[data-status="1"]'),
+      goal: document.querySelector('[data-goal="1"]'),
     },
     2: {
       root: document.querySelector(".p2"),
@@ -613,13 +635,15 @@
       score: document.querySelector('[data-score="2"]'),
       name: document.querySelector('[data-name="2"]'),
       undo: document.querySelector('[data-undo="2"]'),
+      status: document.querySelector('[data-status="2"]'),
+      goal: document.querySelector('[data-goal="2"]'),
     },
   };
 
   function persist() {
     localStorage.setItem(
       KEY,
-      JSON.stringify({ p1: state[1], p2: state[2] })
+      JSON.stringify(state)
     );
   }
 
@@ -631,7 +655,8 @@
   }
 
   function render(i) {
-    els[i].score.textContent = state[i];
+    els[i].score.textContent = state["p" + i];
+    els[i].score.style.setProperty("--score-digits", String(state["p" + i]).length);
     els[i].name.textContent = names[i];
   }
 
@@ -664,41 +689,45 @@
   }
 
   function updateLeader() {
-    var a = state[1], b = state[2];
+    var a = state.p1, b = state.p2;
     els[1].root.classList.remove("leading", "trailing");
     els[2].root.classList.remove("leading", "trailing");
-    if (a === b) {
-      document.body.classList.remove("overdrive");
-      return;
-    }
+    if (Math.max(a, b) >= state.goal * 0.8 && Math.max(a, b) > 0) document.body.classList.add("overdrive");
+    else document.body.classList.remove("overdrive");
+    if (a === b) return;
     var lead = a > b ? 1 : 2;
     var other = lead === 1 ? 2 : 1;
     els[lead].root.classList.add("leading");
     els[other].root.classList.add("trailing");
-    if (Math.max(a, b) >= 100) document.body.classList.add("overdrive");
-    else document.body.classList.remove("overdrive");
   }
 
-  var MILESTONES = {
-    10: "NICE",
-    25: "ON FIRE",
-    42: "THE ANSWER",
-    50: "HALF CENTURY",
-    69: "NICE.",
-    100: "CENTURY!",
-    150: "UNSTOPPABLE",
-    200: "GODLIKE",
-    250: "LEGENDARY",
-    300: "MAXIMUM POWER",
-    420: "BLAZE IT",
-    500: "HALF MILLENNIUM",
-    777: "JACKPOT",
-    1000: "A THOUSAND"
-  };
+  function updateMatch() {
+    [1, 2].forEach(function (i) {
+      var remaining = Math.max(0, state.goal - state["p" + i]);
+      var status = state.winner === i ? "Winner · keep playing" :
+        remaining === 0 ? "Goal reached" :
+        remaining === 1 && state.goal >= 2 ? (state.settled ? "1 to goal" : "Match point") : "";
+      if (els[i].status.textContent !== status) els[i].status.textContent = status;
+      els[i].status.classList.toggle("winner", state.winner === i);
+      els[i].root.classList.toggle("near-goal", remaining === 1 && state.goal >= 2);
+      els[i].goal.textContent = "Goal " + state.goal + (remaining ? " · " + remaining + " to go" : "");
+    });
+    updateLeader();
+    FX.setGame(state.p1, state.p2, state.goal);
+  }
 
-  function checkMilestone(i, after) {
-    var label = MILESTONES[after];
-    if (label) FX.boom(label, i);
+  function celebrate(event, i) {
+    if (!event) return;
+    if (event === "win") {
+      FX.boom(names[i] + " wins!", i);
+      return;
+    }
+    var labels = { goal: "Goal reached!", comeback: "What a comeback!",
+      tie: "All tied up!", lead: "Takes the lead!", matchpoint: "Match point!",
+      near: "Goal in sight!", halfway: "Halfway there!" };
+    // Once a match has a winner, this is a point to reach the goal, not to win.
+    var text = event === "matchpoint" && state.settled ? "1 to goal!" : labels[event];
+    FX.notice(text, event === "tie" ? 0 : i);
   }
 
   function ripple(host, clientX, clientY) {
@@ -728,23 +757,25 @@
 
   function change(i, delta) {
     if (!delta) return;
-    var before = state[i];
+    var before = state["p" + i];
+    var result = delta > 0 ? Match.advance(state, i, delta) : null;
+    var next = result ? result.match : Match.correct(state, i, before + delta);
+    if (next["p" + i] === before) return;
     history[i].push(before);
     if (history[i].length > MAX_HISTORY) history[i].shift();
-    state[i] = Math.max(0, state[i] + delta);
-    var applied = state[i] !== before;
+    state = next;
     render(i);
     persist();
     updateUndo(i);
-    updateLeader();
-    FX.setGame(state[1], state[2]);
+    updateMatch();
     if (delta > 0) {
       slam(i);
       floatPlus(i, delta);
       buzz(12);
       FX.hit(i, delta);
-      if (applied) checkMilestone(i, state[i]);
+      celebrate(result.event, i);
     } else {
+      FX.clearFeedback();
       buzz(8);
       FX.subtract(i);
     }
@@ -752,13 +783,13 @@
 
   function undo(i) {
     if (!history[i].length) return;
-    state[i] = history[i].pop();
+    state = Match.correct(state, i, history[i].pop());
     render(i);
     persist();
     updateUndo(i);
     slam(i);
-    updateLeader();
-    FX.setGame(state[1], state[2]);
+    updateMatch();
+    FX.clearFeedback();
     FX.flash(i === 1 ? "p1" : "p2");
     buzz(8);
   }
@@ -778,8 +809,7 @@
 
   function performReset() {
     closeReset();
-    state[1] = 0;
-    state[2] = 0;
+    state = Match.reset(state);
     history[1] = [];
     history[2] = [];
     render(1);
@@ -787,8 +817,7 @@
     persist();
     updateUndo(1);
     updateUndo(2);
-    updateLeader();
-    FX.setGame(0, 0);
+    updateMatch();
     FX.reset();
     buzz(20);
   }
@@ -828,12 +857,83 @@
     closeName();
   }
 
+  var optionsDialog = document.getElementById("options-dialog");
+  var optionsButton = document.getElementById("options");
+  var goalInput = document.getElementById("goal-input");
+  var goalError = document.getElementById("goal-error");
+
+  function clearGoalError() {
+    goalError.hidden = true;
+    goalError.textContent = "";
+    goalInput.removeAttribute("aria-invalid");
+  }
+
+  function openOptions() {
+    goalInput.value = state.goal;
+    clearGoalError();
+    optionsDialog.hidden = false;
+    pinDialogs();
+    optionsDialog.scrollTop = 0;
+    optionsDialog.querySelector(".dialog-card").scrollTop = 0;
+    FX.setPaused(true);
+    setTimeout(function () {
+      if (optionsDialog.hidden) return;
+      goalInput.focus({ preventScroll: true });
+      goalInput.select();
+      pinDialogs();
+    }, 0);
+  }
+
+  function closeOptions() {
+    optionsDialog.hidden = true;
+    FX.setPaused(false);
+    optionsButton.focus({ preventScroll: true });
+  }
+
+  function saveOptions() {
+    var goal = Match.parseGoal(goalInput.value);
+    if (goal === null) {
+      goalError.textContent = "Enter a whole number from 1 to 999999.";
+      goalError.hidden = false;
+      goalInput.setAttribute("aria-invalid", "true");
+      goalInput.focus({ preventScroll: true });
+      return;
+    }
+    var changed = goal !== state.goal;
+    state = Match.setGoal(state, goal);
+    persist();
+    updateMatch();
+    closeOptions();
+    if (changed) {
+      FX.clearFeedback();
+      FX.banner("Goal set to " + goal, "#e7ecf3");
+    }
+  }
+
+  function activeDialog() {
+    if (!optionsDialog.hidden) return optionsDialog;
+    if (!nameDialog.hidden) return nameDialog;
+    if (!dialog.hidden) return dialog;
+    return null;
+  }
+
+  function containFocus(e, modal) {
+    if (e.key !== "Tab") return;
+    var items = modal.querySelectorAll("input, button:not(:disabled)");
+    var first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+      e.preventDefault(); first.focus();
+    }
+  }
+
   var vv = window.visualViewport;
 
   function pinDialogs() {
     if (!vv) return;
     var box = { top: vv.offsetTop, height: vv.height };
-    [dialog, nameDialog].forEach(function (d) {
+    [dialog, nameDialog, optionsDialog].forEach(function (d) {
       d.style.top = box.top + "px";
       d.style.height = box.height + "px";
       d.style.bottom = "auto";
@@ -855,6 +955,7 @@
   function resolveControl(el) {
     if (!el || !el.closest) return null;
     if (el.closest("#reset")) return { kind: "reset" };
+    if (el.closest("#options")) return { kind: "options" };
     var player = el.closest(".player");
     if (!player) return null;
     var i = playerIndex(player);
@@ -873,6 +974,7 @@
   function runControl(c) {
     if (!c) return;
     if (c.kind === "reset") openReset();
+    else if (c.kind === "options") openOptions();
     else if (c.kind === "add") change(c.i, c.delta);
     else if (c.kind === "minus") change(c.i, -1);
     else if (c.kind === "undo") undo(c.i);
@@ -880,10 +982,11 @@
     else if (c.kind === "mid") change(c.i, 1);
   }
 
-  var RIPPLE_HOSTS = ".add, .minus, .undo, #reset";
+  var RIPPLE_HOSTS = ".add, .minus, .undo, #reset, #options";
 
   function press(el, fn) {
     el.addEventListener("pointerdown", function (e) {
+      if (activeDialog()) return;
       if (e.pointerType === "touch") return; // touch is handled by touchstart
       if (e.pointerType === "mouse" && e.button !== 0) return;
       e.stopPropagation();
@@ -893,6 +996,7 @@
       fn(e);
     });
     el.addEventListener("click", function (e) {
+      if (activeDialog()) return;
       if (e.detail !== 0) return; // real pointer click; keyboard/AT only
       e.stopPropagation();
       fn(e);
@@ -900,10 +1004,11 @@
   }
 
   function onTouchStart(e) {
-    if (!dialog.hidden || !nameDialog.hidden) return;
+    if (activeDialog()) return;
     var touches = e.changedTouches || [];
     var handled = false;
     for (var k = 0; k < touches.length; k++) {
+      if (activeDialog()) break;
       var t = touches[k];
       var el = document.elementFromPoint(t.clientX, t.clientY);
       var c = resolveControl(el);
@@ -943,6 +1048,13 @@
   press(document.getElementById("reset"), function () {
     openReset();
   });
+  press(optionsButton, openOptions);
+  document.getElementById("options-save").addEventListener("click", saveOptions);
+  document.getElementById("options-cancel").addEventListener("click", closeOptions);
+  goalInput.addEventListener("input", clearGoalError);
+  optionsDialog.addEventListener("click", function (e) {
+    if (e.target === optionsDialog) closeOptions();
+  });
 
   document.getElementById("dialog-confirm").addEventListener("click", performReset);
   document.getElementById("dialog-cancel").addEventListener("click", closeReset);
@@ -957,6 +1069,17 @@
   });
 
   document.addEventListener("keydown", function (e) {
+    var modal = activeDialog();
+    if (modal) containFocus(e, modal);
+    if (!optionsDialog.hidden) {
+      if (e.key === "Escape") { e.preventDefault(); closeOptions(); }
+      else if (e.key === "Enter") {
+        e.preventDefault();
+        if (document.activeElement === document.getElementById("options-cancel")) closeOptions();
+        else saveOptions();
+      }
+      return;
+    }
     if (!nameDialog.hidden) {
       if (e.key === "Escape") closeName();
       else if (e.key === "Enter") saveName();
@@ -976,12 +1099,12 @@
   render(2);
   updateUndo(1);
   updateUndo(2);
-  updateLeader();
+  updateMatch();
 
   document.addEventListener("touchstart", onTouchStart, { passive: false });
 
   FX.init();
-  FX.setGame(state[1], state[2]);
+  FX.setGame(state.p1, state.p2, state.goal);
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(function () { FX.measure(); });
   }

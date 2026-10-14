@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#0a0d12" />
   <title>SimpleScore</title>
-  <link rel="stylesheet" href="styles.css?v=8" />
+  <link rel="stylesheet" href="styles.css?v=9" />
 </head>
 <body>
   <main id="board">
@@ -17,6 +17,8 @@
         <div class="crown" aria-hidden="true">👑</div>
         <div class="name" data-name="1">Player 1</div>
         <div class="score" data-score="1">0</div>
+        <div class="score-status" data-status="1" role="status" aria-live="polite"></div>
+        <div class="goal-context" data-goal="1"></div>
       </div>
 
       <div class="adds">
@@ -39,6 +41,8 @@
         <div class="crown" aria-hidden="true">👑</div>
         <div class="name" data-name="2">Player 2</div>
         <div class="score" data-score="2">0</div>
+        <div class="score-status" data-status="2" role="status" aria-live="polite"></div>
+        <div class="goal-context" data-goal="2"></div>
       </div>
 
       <div class="adds">
@@ -54,6 +58,12 @@
     </section>
 
     <button id="reset" aria-label="Reset scores">↺</button>
+    <button id="options" aria-label="Game options" aria-haspopup="dialog" aria-controls="options-dialog">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+        <path d="M9.5 3h5l.7 3 2.1 1.2 3-.9 2.5 4.4-2.3 2.1v2.4l2.3 2.1-2.5 4.4-3-.9-2.1 1.2-.7 3h-5l-.7-3-2.1-1.2-3 .9-2.5-4.4 2.3-2.1v-2.4L.7 10.7l2.5-4.4 3 .9L8.3 6z" transform="translate(2 0) scale(.83)" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    </button>
   </main>
 
   <canvas id="fx" aria-hidden="true"></canvas>
@@ -63,7 +73,7 @@
   <div id="dialog" class="dialog" hidden>
     <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
       <div class="dialog-title" id="dialog-title">Reset both scores?</div>
-      <div class="dialog-text">Clears both players and the undo history.</div>
+      <div class="dialog-text">Clears both scores, the winner, and undo history. Keeps your goal.</div>
       <div class="dialog-actions">
         <button class="dialog-btn ghost" id="dialog-cancel" type="button">Cancel</button>
         <button class="dialog-btn danger" id="dialog-confirm" type="button">Reset</button>
@@ -83,7 +93,23 @@
     </div>
   </div>
 
-  <script src="updater.js?v=8"></script>
-  <script src="app.js?v=8"></script>
+  <div id="options-dialog" class="dialog" hidden>
+    <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="options-title">
+      <div class="dialog-title" id="options-title">Game options</div>
+      <label class="dialog-label" for="goal-input">Score to win</label>
+      <input id="goal-input" class="dialog-input" type="text" inputmode="numeric" pattern="[0-9]*"
+        maxlength="12" autocomplete="off" enterkeyhint="done" aria-describedby="goal-help goal-error" />
+      <div class="dialog-text" id="goal-help">First to the goal wins. Keep playing afterward. A new goal applies to current scores.</div>
+      <div id="goal-error" class="dialog-error" role="alert" hidden></div>
+      <div class="dialog-actions">
+        <button class="dialog-btn ghost" id="options-cancel" type="button">Cancel</button>
+        <button class="dialog-btn primary" id="options-save" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="updater.js?v=9"></script>
+  <script src="match.js?v=9"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>
